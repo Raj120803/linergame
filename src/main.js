@@ -46,12 +46,18 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
   const restartBtn = document.getElementById("restart-btn");
 
   // === Game Objects ===
-  const player = new Graphics().beginFill(0xffffff).drawRect(0, 0, paddleWidth, paddleHeight).endFill();
+  const player = new Graphics()
+    .beginFill(0xffffff)
+    .drawRect(0, 0, paddleWidth, paddleHeight)
+    .endFill();
   player.x = app.screen.width - paddleWidth - 10;
   player.y = app.screen.height / 2 - paddleHeight / 2;
   app.stage.addChild(player);
 
-  const ai = new Graphics().beginFill(0xffffff).drawRect(0, 0, paddleWidth, paddleHeight).endFill();
+  const ai = new Graphics()
+    .beginFill(0xffffff)
+    .drawRect(0, 0, paddleWidth, paddleHeight)
+    .endFill();
   ai.x = 10;
   ai.y = app.screen.height / 2 - paddleHeight / 2;
   app.stage.addChild(ai);
@@ -74,7 +80,10 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
 
   // === Control ===
   const updatePlayerY = (y) => {
-    player.y = Math.min(Math.max(0, y - paddleHeight / 2), app.screen.height - paddleHeight);
+    player.y = Math.min(
+      Math.max(0, y - paddleHeight / 2),
+      app.screen.height - paddleHeight,
+    );
   };
 
   window.addEventListener("mousemove", (e) => {
@@ -111,7 +120,8 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
     ball.x += vx;
     ball.y += vy;
 
-    if (ball.y - ballRadius < 0 || ball.y + ballRadius > app.screen.height) vy *= -1;
+    if (ball.y - ballRadius < 0 || ball.y + ballRadius > app.screen.height)
+      vy *= -1;
 
     ai.y += (ball.y - paddleHeight / 2 - ai.y) * 0.08;
 
