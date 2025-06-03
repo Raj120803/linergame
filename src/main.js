@@ -1,6 +1,10 @@
 import { Application, Graphics, Sprite, Assets } from "pixi.js";
 
 (async () => {
+  const loadingScreen = document.getElementById("loading-screen");
+  const startScreen = document.getElementById("start-screen");
+  const startBtn = document.getElementById("start-btn");
+
   const app = new Application();
   await app.init({
     background: 0x000000,
@@ -9,8 +13,14 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
 
   document.getElementById("pixi-container").appendChild(app.canvas);
 
-  // === Load and Add Background Image ===
-  const bgTexture = await Assets.load("/assets/black.jpg");
+  // === Load Assets ===
+  const [bgTexture, ballTexture] = await Promise.all([
+    Assets.load("/assets/black.jpg"),
+    Assets.load("/assets/yoga-ball_6234119.png"),
+  ]);
+  const hitSound = new Audio("assets/hit.wav");
+
+  // === Create Background ===
   const background = new Sprite(bgTexture);
   background.width = app.screen.width;
   background.height = app.screen.height;
@@ -20,25 +30,14 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
   const paddleWidth = 20;
   const paddleHeight = 100;
   const ballRadius = 15;
-  let score = 0;
   let vx = 5;
   let vy = 3;
+  let score = 0;
   let isGameOver = false;
-  const hitSound = new Audio("assets/hit.wav");
 
   // === UI Elements ===
   const scoreDiv = document.createElement("div");
   scoreDiv.id = "score";
-  scoreDiv.style.cssText = `
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-family: sans-serif;
-    font-size: 24px;
-    z-index: 10;
-  `;
   scoreDiv.innerText = `Score: 0`;
   document.body.appendChild(scoreDiv);
 
@@ -46,26 +45,17 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
   const finalScore = document.getElementById("final-score");
   const restartBtn = document.getElementById("restart-btn");
 
-  // === Player Paddle ===
-  const player = new Graphics()
-    .beginFill(0xffffff)
-    .drawRect(0, 0, paddleWidth, paddleHeight)
-    .endFill();
+  // === Game Objects ===
+  const player = new Graphics().beginFill(0xffffff).drawRect(0, 0, paddleWidth, paddleHeight).endFill();
   player.x = app.screen.width - paddleWidth - 10;
   player.y = app.screen.height / 2 - paddleHeight / 2;
   app.stage.addChild(player);
 
-  // === AI Paddle ===
-  const ai = new Graphics()
-    .beginFill(0xffffff)
-    .drawRect(0, 0, paddleWidth, paddleHeight)
-    .endFill();
+  const ai = new Graphics().beginFill(0xffffff).drawRect(0, 0, paddleWidth, paddleHeight).endFill();
   ai.x = 10;
   ai.y = app.screen.height / 2 - paddleHeight / 2;
   app.stage.addChild(ai);
 
-  // === Ball (Sprite) ===
-  const ballTexture = await Assets.load("/assets/yoga-ball_6234119.png");
   const ball = new Sprite(ballTexture);
   ball.anchor.set(0.5);
   ball.width = ball.height = ballRadius * 2;
@@ -73,7 +63,7 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
   ball.y = app.screen.height / 2;
   app.stage.addChild(ball);
 
-  // === Hit Effect (Red Flash) ===
+  // === Effects ===
   function playHitEffect(ball) {
     const originalTint = ball.tint;
     ball.tint = 0xff0000;
@@ -82,12 +72,9 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
     }, 150);
   }
 
-  // === Paddle Control (Touch / Mouse) ===
+  // === Control ===
   const updatePlayerY = (y) => {
-    player.y = Math.min(
-      Math.max(0, y - paddleHeight / 2),
-      app.screen.height - paddleHeight,
-    );
+    player.y = Math.min(Math.max(0, y - paddleHeight / 2), app.screen.height - paddleHeight);
   };
 
   window.addEventListener("mousemove", (e) => {
@@ -102,7 +89,7 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
     }
   });
 
-  // === Restart Button ===
+  // === Restart ===
   restartBtn.addEventListener("click", () => {
     popup.style.display = "none";
     resetGame();
@@ -118,23 +105,16 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
     scoreDiv.innerText = `Score: ${score}`;
   }
 
-  // === Game Loop ===
-  app.ticker.add(() => {
+  function gameLoop() {
     if (isGameOver) return;
 
-    // Move ball
     ball.x += vx;
     ball.y += vy;
 
-    // Bounce off top/bottom
-    if (ball.y - ballRadius < 0 || ball.y + ballRadius > app.screen.height) {
-      vy *= -1;
-    }
+    if (ball.y - ballRadius < 0 || ball.y + ballRadius > app.screen.height) vy *= -1;
 
-    // AI Paddle follows ball
     ai.y += (ball.y - paddleHeight / 2 - ai.y) * 0.08;
 
-    // Player collision
     if (
       ball.x + ballRadius > player.x &&
       ball.y > player.y &&
@@ -149,7 +129,6 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
       playHitEffect(ball);
     }
 
-    // AI collision
     if (
       ball.x - ballRadius < ai.x + paddleWidth &&
       ball.y > ai.y &&
@@ -162,22 +141,28 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
       playHitEffect(ball);
     }
 
-    // Game over
     if (ball.x > app.screen.width) {
       isGameOver = true;
       finalScore.innerText = `Game Over! Your score: ${score}`;
       popup.style.display = "block";
     }
 
-    // If AI misses, just reset
-    if (ball.x < 0) {
-      resetGame();
-    }
-  });
+    if (ball.x < 0) resetGame();
+  }
 
-  // Responsive background resize
+  // === Responsive Background Resize ===
   window.addEventListener("resize", () => {
     background.width = app.screen.width;
     background.height = app.screen.height;
+  });
+
+  // === Start Button ===
+  loadingScreen.style.display = "none";
+  startScreen.style.display = "flex";
+
+  startBtn.addEventListener("click", () => {
+    startScreen.style.display = "none";
+    resetGame();
+    app.ticker.add(gameLoop);
   });
 })();
