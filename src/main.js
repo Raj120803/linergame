@@ -86,7 +86,7 @@ import { Application, Graphics, Sprite, Assets } from "pixi.js";
   const updatePlayerY = (y) => {
     player.y = Math.min(
       Math.max(0, y - paddleHeight / 2),
-      app.screen.height - paddleHeight
+      app.screen.height - paddleHeight,
     );
   };
 
